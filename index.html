@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Morganite Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="stage">
+      <section class="laptop" aria-label="Laptop mockup">
+        <header class="laptop-top"></header>
+        <div class="screen-shell">
+          <div class="screen-scale">
+            <div class="screen-ui">
+              <section class="auth-panel">
+                <div class="auth-inner">
+                  <a href="#" class="brand" aria-label="Morganite home">
+                    <span class="brand-icon"></span>
+                    <span>Morganite</span>
+                  </a>
+
+                  <div class="form-wrap">
+                    <h1>Welcome Morganite!</h1>
+                    <p class="subtitle">Please enter your details.</p>
+                    <div class="panel-divider" aria-hidden="true"></div>
+
+                    <form class="login-form" action="#" method="post">
+                      <label class="field-label" for="email">Email</label>
+                      <input id="email" class="input" type="email" value="morganite@gmail.com" />
+
+                      <label class="field-label" for="password">Password</label>
+                      <input id="password" class="input" type="password" value="password" />
+
+                      <a href="#" class="forgot-link">Forgot Password?</a>
+
+                      <button class="btn-login" type="submit">Log in</button>
+                    </form>
+
+                    <p class="signup-text">
+                      Don’t have an account?
+                      <a href="#">Sign up</a>
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              <section class="hero-panel">
+                <div class="hero-language-pill">English</div>
+
+                <div class="hero-content">
+                  <h2>
+                    <span>1K+ students.</span>
+                    <span>Smart AI advisor.</span>
+                  </h2>
+
+                  <button class="btn-join" type="button">
+                    Join Now
+                    <span class="btn-pointer" aria-hidden="true"></span>
+                  </button>
+                </div>
+
+                <div class="watermark" aria-hidden="true">3D</div>
+
+                <div class="illustration" aria-hidden="true">
+                  <svg viewBox="0 0 420 300" role="img" aria-label="3D cube illustration">
+                    <defs>
+                      <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="#ff4d4d" stop-opacity="0.9" />
+                        <stop offset="100%" stop-color="#ff2f2f" stop-opacity="0.65" />
+                      </linearGradient>
+                    </defs>
+
+                    <g fill="none" stroke="#dbdbdb" stroke-width="2.5" opacity="0.9">
+                      <path d="M160 65L250 35L340 90L250 122Z" />
+                      <path d="M160 65V175L250 228V122" />
+                      <path d="M340 90V200L250 228" />
+                      <path d="M160 175L250 142L340 200" opacity="0.35" />
+                    </g>
+
+                    <ellipse
+                      cx="248"
+                      cy="148"
+                      rx="156"
+                      ry="66"
+                      transform="rotate(-13 248 148)"
+                      stroke="url(#ringGrad)"
+                      stroke-width="3"
+                      fill="none"
+                      opacity="0.85"
+                    />
+
+                    <g fill="#ff4242">
+                      <circle cx="104" cy="128" r="7" />
+                      <circle cx="357" cy="175" r="7" />
+                      <circle cx="251" cy="41" r="7" />
+                      <circle cx="250" cy="227" r="7" />
+                    </g>
+                  </svg>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+        <footer class="laptop-base"></footer>
+      </section>
+    </main>
+  </body>
+</html>
