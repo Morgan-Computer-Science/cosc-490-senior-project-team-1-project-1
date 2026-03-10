@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Morgan AI Dashboard</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="dashboard.css">
+
+</head>
+
+<body>
+
+<div class="dashboard">
+
+<aside class="sidebar">
+
+<div class="logo">
+<div class="logo-icon"></div>
+<h2>Morgan AI</h2>
+</div>
+
+<nav>
+
+<ul>
+
+<li class="active">Dashboard</li>
+
+<li>Course Planner</li>
+
+<li>AI Advisor</li>
+
+<li>Graduation Tracker</li>
+
+<li>Settings</li>
+
+<li class="logout">Logout</li>
+
+</ul>
+
+</nav>
+
+</aside>
+
+<main class="main-content">
+
+<header class="topbar">
+
+<h1>Welcome Morganite 👋</h1>
+
+<div class="profile">
+
+<span>Student</span>
+
+<div class="avatar"></div>
+
+</div>
+
+</header>
+
+<section class="cards">
+
+<div class="card">
+
+<h3>AI Course Advisor</h3>
+
+<p>Ask Morgan AI what classes you should take next semester.</p>
+
+<button class="card-btn">Ask AI</button>
+
+</div>
+
+<div class="card">
+
+<h3>Graduation Progress</h3>
+
+<p>Track how close you are to completing your degree.</p>
+
+<button class="card-btn">View Progress</button>
+
+</div>
+
+<div class="card">
+
+<h3>Recommended Courses</h3>
+
+<p>AI generated course suggestions based on your major.</p>
+
+<button class="card-btn">View Courses</button>
+
+</div>
+
+</section>
+
+<section class="ai-section">
+
+<h2>Morgan AI Advisor</h2>
+
+<div class="chat-box" id="chatBox">
+
+<div class="ai-message">
+Hello! I am Morgan AI. Ask me what courses you should take.
+</div>
+
+</div>
+
+<div class="chat-input">
+
+<input id="userInput" type="text" placeholder="Ask Morgan AI about your courses...">
+
+<button onclick="sendMessage()">Send</button>
+
+</div>
+
+</section>
+
+</main>
+
+</div>
+
+<script>
+
+async function sendMessage(){
+
+let input = document.getElementById("userInput")
+
+let message = input.value
+
+if(message === "") return
+
+let chatBox = document.getElementById("chatBox")
+
+chatBox.innerHTML += `<div class="user-msg">${message}</div>`
+
+input.value = ""
+
+let response = await fetch("chat.php",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({message:message})
+})
+
+let data = await response.json()
+
+let aiReply = data.candidates[0].content.parts[0].text
+
+chatBox.innerHTML += `<div class="ai-msg">${aiReply}</div>`
+
+chatBox.scrollTop = chatBox.scrollHeight
+
+}
+
+</script>
+
+</body>
+</html>
