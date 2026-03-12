@@ -8,18 +8,17 @@ require_once "vendor/autoload.php";
 
 use Smalot\PdfParser\Parser;
 
-$apiKey = "AIzaSyBirH_IC08w6Yj59xd6YxRC0xfYchZAz88";
+$apiKey = "YOUR_GEMINI_API_KEY";
 
 /* ============================
    STUDENT SESSION INFO
 ============================ */
 
 $name = $_SESSION["name"] ?? "Student";
-
-$db_student_id = $_SESSION["user_id"] ?? "";      // database id
-$student_number = $_SESSION["student_id"] ?? "";  // real Morgan student number
-
+$db_student_id = $_SESSION["user_id"] ?? "";
+$student_number = $_SESSION["student_id"] ?? "";
 $email = $_SESSION["email"] ?? "";
+
 
 /* ============================
    GET COMPLETED COURSES
@@ -48,29 +47,32 @@ $completedCourses[] = $row["course_code"];
 
 $completedText = implode(", ",$completedCourses);
 
+
 /* ============================
    GET MORGAN CATALOG (RAG)
 ============================ */
 
 $catalogURL = "https://catalog.morgan.edu/preview_program.php?catoid=26&poid=5968&returnto=1880";
 
-$catalogHTML = @file_get_contents($catalogURL, false, stream_context_create([
-    "http" => [
-        "timeout" => 3
-    ]
-]));
+$ch = curl_init($catalogURL);
+
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0");
+curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+
+$catalogHTML = curl_exec($ch);
+curl_close($ch);
 
 $catalogPageText = "";
 
 if($catalogHTML){
 
 $catalogPageText = strip_tags($catalogHTML);
-
-/* reduce size so it fits AI prompt */
-
-$catalogPageText = substr($catalogPageText,0,8000);
+$catalogPageText = preg_replace('/\s+/', ' ', $catalogPageText);
+$catalogPageText = substr($catalogPageText,0,5000);
 
 }
+
 
 /* ============================
    GET CURRICULUM FROM DATABASE
@@ -97,11 +99,40 @@ $row["course_name"] .
 
 $catalogText = implode(", ", $catalog);
 
+
+/* ============================
+   COURSE RECOMMENDATIONS
+============================ */
+
+$recommendedCourses=[];
+
+foreach($catalog as $course){
+
+$canTake=true;
+
+foreach($completedCourses as $done){
+
+if(strpos($course,$done)!==false){
+$canTake=false;
+}
+
+}
+
+if($canTake){
+$recommendedCourses[]=$course;
+}
+
+}
+
+$recommendedText = implode(", ",array_slice($recommendedCourses,0,10));
+
+
 /* ============================
    MESSAGE INPUT
 ============================ */
 
 $message = $_POST["message"] ?? "";
+
 
 /* ============================
    FILE PROCESSING
@@ -116,6 +147,7 @@ $fileName=$_FILES["file"]["name"];
 
 $fileType=strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
 
+
 /* PDF */
 
 if($fileType=="pdf"){
@@ -126,11 +158,13 @@ $fileText=$pdf->getText();
 
 }
 
+
 /* TXT */
 
 elseif($fileType=="txt"){
 $fileText=file_get_contents($fileTmp);
 }
+
 
 /* DOCX */
 
@@ -150,13 +184,14 @@ $fileText=strip_tags($xml);
 
 }
 
+
 /* IMAGE */
 
 elseif(in_array($fileType,["jpg","jpeg","png"])){
 
 $imageData=base64_encode(file_get_contents($fileTmp));
 
-$url="https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=".$apiKey;
+$url="https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=".$apiKey;
 
 $data=[
 "contents"=>[
@@ -193,6 +228,7 @@ $fileText=$decoded["candidates"][0]["content"]["parts"][0]["text"] ?? "";
 
 }
 
+
 /* ============================
    CHAT HISTORY
 ============================ */
@@ -201,82 +237,96 @@ if(!isset($_SESSION["chat_history"])){
 $_SESSION["chat_history"]=[];
 }
 
-$_SESSION["chat_history"][]="Student: ".$message;
+$_SESSION["chat_history"][]=[
+"role"=>"user",
+"parts"=>[
+["text"=>$message]
+]
+];
 
-if(count($_SESSION["chat_history"])>8){
+if(count($_SESSION["chat_history"])>10){
 array_shift($_SESSION["chat_history"]);
 }
 
-$history=implode("\n",$_SESSION["chat_history"]);
 
 /* ============================
    AI PROMPT
 ============================ */
 
 $prompt="
-Always check the prerequisite listed for each course before advising whether a student can enroll.
 
-You are Morgan AI, an academic advisor assistant for Morgan State University.
+You are Morgan AI, an academic advisor assistant for Morgan State University 🎓.
 
-If database information conflicts with the official Morgan catalog,
-always trust the catalog.
+Your job is to help students:
 
-RESPONSE STYLE RULES:
+1. Understand degree requirements
+2. Recommend courses
+3. Check prerequisites
+4. Answer Morgan catalog questions
 
-Do not use markdown symbols like ** or *.
+If database information conflicts with the official catalog,
+always trust the Morgan catalog.
+
+Response Style Rules:
+
 Use short readable paragraphs.
 Leave spacing between sections.
 Use numbered lists for advice.
-Keep responses conversational.
-Use light emoji occasionally (📚 🎓 📅).
+Keep responses friendly.
+Use light emoji occasionally 📚 🎓 📅.
 
-Student Information:
+Student Information
 Name: $name
 Student ID: $student_number
 Email: $email
 
-Completed Courses:
+Completed Courses
 $completedText
 
-Morgan Computer Science Curriculum:
+Possible Courses They Can Take Next
+$recommendedText
+
+Morgan CS Curriculum Database
 $catalogText
 
-Official Morgan State Catalog Information:
+Official Morgan Catalog Website Data
 $catalogPageText
 
-Conversation history:
-$history
-
-Uploaded file content:
+Uploaded File Content
 $fileText
 
-Student question:
+Student Question
 $message
 
 ";
+
 
 /* ============================
    GEMINI REQUEST DATA
 ============================ */
 
 $data=[
-"contents"=>[
+"contents"=>array_merge(
 [
+[
+"role"=>"user",
 "parts"=>[
 ["text"=>$prompt]
 ]
 ]
-]
+],
+$_SESSION["chat_history"]
+)
 ];
+
 
 /* ============================
    GEMINI MODEL FALLBACK
 ============================ */
 
 $models = [
-"gemini-2.0-flash",   // free + most reliable
-"gemini-2.5-flash",   // faster but limited quota
-"gemini-1.5-flash"    // extra backup
+"gemini-2.0-flash",
+"gemini-1.5-flash"
 ];
 
 foreach($models as $model){
@@ -295,13 +345,21 @@ curl_close($ch);
 
 $decoded=json_decode($response,true);
 
-/* SUCCESS */
 
 if(isset($decoded["candidates"])){
 
 $reply=$decoded["candidates"][0]["content"]["parts"][0]["text"] ?? "";
 
-$_SESSION["chat_history"][]="Morgan AI: ".$reply;
+
+/* save response to history */
+
+$_SESSION["chat_history"][]=[
+"role"=>"model",
+"parts"=>[
+["text"=>$reply]
+]
+];
+
 
 echo json_encode([
 "candidates"=>[
@@ -321,7 +379,10 @@ exit();
 
 }
 
-/* IF ALL MODELS FAIL */
+
+/* ============================
+   IF ALL MODELS FAIL
+============================ */
 
 echo json_encode([
 "candidates"=>[
@@ -334,3 +395,5 @@ echo json_encode([
 ]
 ]
 ]);
+
+?>
