@@ -201,5 +201,199 @@ window.location="logout.php"
 
 </script>
 
+<script>
+async function settingsApi(payload){
+const formData = new FormData()
+Object.keys(payload).forEach((key)=>formData.append(key,payload[key]))
+
+const res = await fetch("settings_actions.php",{
+method:"POST",
+body:formData
+})
+
+const data = await res.json()
+if(!data.ok){
+throw new Error(data.message || "Action failed")
+}
+return data
+}
+
+function normalizeItemText(text){
+return text.replace(">", "").trim().toLowerCase()
+}
+
+async function onEditProfile(){
+try{
+const data = await settingsApi({action:"load_settings"})
+const current = data.profile || {}
+
+const first = prompt("First name", current.first_name || "")
+if(first === null){ return }
+const last = prompt("Last name", current.last_name || "")
+if(last === null){ return }
+const studentId = prompt("Student ID", current.student_id || "")
+if(studentId === null){ return }
+
+await settingsApi({
+action:"edit_profile",
+first_name:first,
+last_name:last,
+student_id:studentId
+})
+alert("Profile updated.")
+window.location.reload()
+}
+catch(err){
+alert(err.message)
+}
+}
+
+async function onChangePassword(){
+try{
+const currentPassword = prompt("Enter current password")
+if(currentPassword === null){ return }
+const newPassword = prompt("Enter new password (at least 8 characters)")
+if(newPassword === null){ return }
+const confirmPassword = prompt("Confirm new password")
+if(confirmPassword === null){ return }
+
+await settingsApi({
+action:"change_password",
+current_password:currentPassword,
+new_password:newPassword,
+confirm_password:confirmPassword
+})
+alert("Password updated.")
+}
+catch(err){
+alert(err.message)
+}
+}
+
+async function onUpdateEmail(){
+try{
+const data = await settingsApi({action:"load_settings"})
+const email = prompt("Enter new email (@morgan.edu)", (data.profile && data.profile.email) ? data.profile.email : "")
+if(email === null){ return }
+
+await settingsApi({
+action:"update_email",
+email:email
+})
+alert("Email updated.")
+window.location.reload()
+}
+catch(err){
+alert(err.message)
+}
+}
+
+async function onPreference(){
+try{
+const data = await settingsApi({action:"load_settings"})
+const theme = prompt("Preference theme: dark, light, or system", (data.settings && data.settings.theme) ? data.settings.theme : "dark")
+if(theme === null){ return }
+
+await settingsApi({
+action:"preference",
+theme:theme.toLowerCase()
+})
+alert("Preference updated.")
+}
+catch(err){
+alert(err.message)
+}
+}
+
+async function onNotifications(){
+try{
+const data = await settingsApi({action:"load_settings"})
+const currentlyEnabled = data.settings && parseInt(data.settings.notifications,10) === 1
+const enable = confirm((currentlyEnabled ? "Notifications are ON." : "Notifications are OFF.") + " Click OK to set ON, Cancel to set OFF.")
+
+await settingsApi({
+action:"notifications",
+enabled:enable ? "1" : "0"
+})
+alert("Notification setting updated.")
+}
+catch(err){
+alert(err.message)
+}
+}
+
+async function onGraduation(){
+try{
+const data = await settingsApi({action:"load_settings"})
+const graduation = prompt("Enter graduation term/year (example: Spring 2027)", (data.academic && data.academic.graduation) ? data.academic.graduation : "")
+if(graduation === null){ return }
+
+await settingsApi({
+action:"graduation",
+graduation:graduation
+})
+alert("Graduation updated.")
+}
+catch(err){
+alert(err.message)
+}
+}
+
+async function onAssignedAdvisor(){
+try{
+const data = await settingsApi({action:"load_settings"})
+const advisor = prompt("Enter assigned advisor name", (data.academic && data.academic.assigned_advisor) ? data.academic.assigned_advisor : "")
+if(advisor === null){ return }
+
+await settingsApi({
+action:"assigned_advisor",
+advisor:advisor
+})
+alert("Assigned advisor updated.")
+}
+catch(err){
+alert(err.message)
+}
+}
+
+async function onDegreeTrack(){
+try{
+const data = await settingsApi({action:"load_settings"})
+const track = prompt("Enter degree track", (data.academic && data.academic.degree_track) ? data.academic.degree_track : "")
+if(track === null){ return }
+
+await settingsApi({
+action:"degree_track",
+degree_track:track
+})
+alert("Degree track updated.")
+}
+catch(err){
+alert(err.message)
+}
+}
+
+document.addEventListener("DOMContentLoaded", function(){
+const editBtn = document.querySelector(".edit-profile")
+if(editBtn){
+editBtn.addEventListener("click", onEditProfile)
+}
+
+document.querySelectorAll(".settings-item").forEach((item)=>{
+item.addEventListener("click", function(){
+const label = normalizeItemText(item.textContent || "")
+
+if(label === "change password"){ onChangePassword(); return }
+if(label === "update email"){ onUpdateEmail(); return }
+if(label === "preference"){ onPreference(); return }
+if(label === "notifications"){ onNotifications(); return }
+if(label === "graduation"){ onGraduation(); return }
+if(label === "assigned advisor"){ onAssignedAdvisor(); return }
+if(label === "degree track"){ onDegreeTrack(); return }
+})
+})
+})
+</script>
+
 </body>
 </html>
