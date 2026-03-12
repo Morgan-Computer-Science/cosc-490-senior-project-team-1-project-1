@@ -15,11 +15,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-GEMINI_API_KEY = os.environ[""]
+GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
 GEMINI_MODELS = [
     "gemini-2.0-flash",
-    "gemini-2.5-flash",
-    
+    "gemini-2.5-flash-preview-04-17",
+
 ]
 
 SYSTEM_PROMPT = "You are a helpful assistant."  # Customize this
