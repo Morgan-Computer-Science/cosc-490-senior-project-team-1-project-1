@@ -45,6 +45,7 @@
 <select class="input" name="school_year" required>
 
 <option value="">Select School Year</option>
+<option value="Frehman">Freshman</option>
 
 <option value="Sophomore">Sophomore</option>
 
