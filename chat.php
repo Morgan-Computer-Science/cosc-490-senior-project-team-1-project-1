@@ -7,18 +7,7 @@ require_once("db.php");
 require_once "vendor/autoload.php";
 
 use Smalot\PdfParser\Parser;
-
-// ─────────────────────────────────────────────────────────────────────────────
-// YOUR GEMINI API KEY
-// ─────────────────────────────────────────────────────────────────────────────
-$apiKey = "AIzaSyD4LKyXkMDlGKxQDHFgecfQIsqUG_6lQLM"; // ← Replace this with your real key
-
-
-/* ============================
-   SECURITY CHECK
-   Only logged-in students can
-   use this endpoint
-============================ */
+$apiKey = "AIzaSyD4LKyXkMDlGKxQDHFgecfQIsqUG_6lQLM";
 
 if (!isset($_SESSION["user_id"])) {
     echo json_encode([
@@ -29,20 +18,10 @@ if (!isset($_SESSION["user_id"])) {
     exit();
 }
 
-
-/* ============================
-   STUDENT SESSION INFO
-============================ */
-
 $name           = $_SESSION["name"]       ?? "Student";
 $db_student_id  = $_SESSION["user_id"]    ?? "";
 $student_number = $_SESSION["student_id"] ?? "";
 $email          = $_SESSION["email"]      ?? "";
-
-
-/* ============================
-   GET COMPLETED COURSES
-============================ */
 
 $completedCourses = [];
 
@@ -65,12 +44,6 @@ $completedText = !empty($completedCourses)
     : "No completed courses on record yet.";
 
 
-/* ============================
-   GET MORGAN CATALOG (RAG)
-   Cached in session so we only
-   fetch it once per login
-============================ */
-
 if (!isset($_SESSION["catalog_cache"])) {
     $catalogURL = "https://catalog.morgan.edu/preview_program.php?catoid=26&poid=5968&returnto=1880";
     $ch = curl_init($catalogURL);
@@ -90,12 +63,6 @@ if (!isset($_SESSION["catalog_cache"])) {
 }
 
 $catalogPageText = $_SESSION["catalog_cache"];
-
-
-/* ============================
-   GET CURRICULUM FROM DATABASE
-============================ */
-
 $catalog = [];
 
 $result = $conn->query("
@@ -112,11 +79,6 @@ while ($row = $result->fetch_assoc()) {
 $catalogText = !empty($catalog)
     ? implode(", ", $catalog)
     : "No curriculum data found.";
-
-
-/* ============================
-   COURSE RECOMMENDATIONS
-============================ */
 
 $recommendedCourses = [];
 
@@ -137,23 +99,8 @@ $recommendedText = !empty($recommendedCourses)
     ? implode(", ", array_slice($recommendedCourses, 0, 10))
     : "All available courses may have been completed.";
 
-
-/* ============================
-   READ THE INCOMING MESSAGE
-
-   Your mainpage.php sends data
-   as FormData (multipart POST),
-   so we read $_POST["message"].
-
-   This is the fix for the bug —
-   the old version tried to read
-   php://input which is empty
-   when using FormData.
-============================ */
-
 $message = isset($_POST["message"]) ? trim($_POST["message"]) : "";
 
-// If the message is completely empty AND no file was sent, stop here
 if ($message === "" && (!isset($_FILES["file"]) || $_FILES["file"]["error"] !== UPLOAD_ERR_OK)) {
     echo json_encode([
         "candidates" => [[
@@ -163,11 +110,6 @@ if ($message === "" && (!isset($_FILES["file"]) || $_FILES["file"]["error"] !== 
     exit();
 }
 
-
-/* ============================
-   FILE PROCESSING
-============================ */
-
 $fileText = "";
 
 if (isset($_FILES["file"]) && $_FILES["file"]["error"] === UPLOAD_ERR_OK) {
@@ -175,8 +117,6 @@ if (isset($_FILES["file"]) && $_FILES["file"]["error"] === UPLOAD_ERR_OK) {
     $fileTmp  = $_FILES["file"]["tmp_name"];
     $fileName = $_FILES["file"]["name"];
     $fileType = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-
-    /* PDF */
     if ($fileType === "pdf") {
         try {
             $parser   = new Parser();
@@ -187,12 +127,10 @@ if (isset($_FILES["file"]) && $_FILES["file"]["error"] === UPLOAD_ERR_OK) {
         }
     }
 
-    /* TXT */
     elseif ($fileType === "txt") {
         $fileText = file_get_contents($fileTmp);
     }
 
-    /* DOCX */
     elseif ($fileType === "docx") {
         $zip = new ZipArchive;
         if ($zip->open($fileTmp) === TRUE) {
@@ -202,7 +140,6 @@ if (isset($_FILES["file"]) && $_FILES["file"]["error"] === UPLOAD_ERR_OK) {
         }
     }
 
-    /* IMAGE — uses Gemini Vision */
     elseif (in_array($fileType, ["jpg", "jpeg", "png"])) {
 
         $imageData = base64_encode(file_get_contents($fileTmp));
@@ -236,33 +173,20 @@ if (isset($_FILES["file"]) && $_FILES["file"]["error"] === UPLOAD_ERR_OK) {
 }
 
 
-/* ============================
-   CHAT HISTORY
-   Keeps the last 10 turns so
-   Gemini remembers the convo
-============================ */
 
 if (!isset($_SESSION["chat_history"])) {
     $_SESSION["chat_history"] = [];
 }
 
-// Add the user's current message to history
 $_SESSION["chat_history"][] = [
     "role"  => "user",
     "parts" => [["text" => $message]]
 ];
 
-// Keep only the last 10 messages
 if (count($_SESSION["chat_history"]) > 10) {
     array_shift($_SESSION["chat_history"]);
 }
 
-
-/* ============================
-   SYSTEM PROMPT
-   Tells Gemini who it is and
-   gives it all the context
-============================ */
 
 $systemPrompt = "
 You are Morgan AI, a friendly and knowledgeable academic advisor assistant
@@ -314,14 +238,6 @@ $message
 ";
 
 
-/* ============================
-   BUILD GEMINI REQUEST
-
-   Structure:
-   [0] system prompt as first user turn
-   [1..N] full chat history
-============================ */
-
 $contents = array_merge(
     [[
         "role"  => "user",
@@ -333,11 +249,6 @@ $contents = array_merge(
 $requestData = ["contents" => $contents];
 
 
-/* ============================
-   CALL GEMINI API
-   Falls back to 1.5-flash if
-   2.0-flash is unavailable
-============================ */
 
 $models = [
     "gemini-2.0-flash",
@@ -370,13 +281,11 @@ foreach ($models as $model) {
 
         $reply = $decoded["candidates"][0]["content"]["parts"][0]["text"];
 
-        // Save the AI reply to chat history for next turn
         $_SESSION["chat_history"][] = [
             "role"  => "model",
             "parts" => [["text" => $reply]]
         ];
 
-        // Return in the exact format mainpage.php expects
         echo json_encode([
             "candidates" => [[
                 "content" => [
@@ -387,15 +296,9 @@ foreach ($models as $model) {
         exit();
     }
 
-    // Log the error reason and try the next model
     $errorMsg = $decoded["error"]["message"] ?? json_encode($decoded);
     error_log("Morgan AI: $model failed — $errorMsg");
 }
-
-
-/* ============================
-   ALL MODELS FAILED
-============================ */
 
 echo json_encode([
     "candidates" => [[
