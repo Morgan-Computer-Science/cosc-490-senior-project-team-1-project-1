@@ -7,7 +7,7 @@ require_once("db.php");
 require_once "vendor/autoload.php";
 
 use Smalot\PdfParser\Parser;
-$apiKey = "AIzaSyD4LKyXkMDlGKxQDHFgecfQIsqUG_6lQLM";
+$apiKey = "AIzaSyCkTC-KxaFLF4q5MmKKYQ2IX7EwXqssSzg";
 
 if (!isset($_SESSION["user_id"])) {
     echo json_encode([
