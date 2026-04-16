@@ -462,7 +462,7 @@ body {
                 <span class="year-badge y1">Year 1</span>
                 <h3>Fall Semester</h3>
             </div>
-            <span class="credit-badge">15 Credits</span>
+            <span class="credit-badge">18 Credits</span>
         </div>
         <div class="course-list">
 
@@ -472,7 +472,7 @@ body {
                     <div class="course-code">COSC 111</div>
                     <div class="course-name">Introduction to Computer Science I</div>
                 </div>
-                <span class="course-credits">3 cr</span>
+                <span class="course-credits">4 cr</span>
             </div>
 
             <div class="course-item">
@@ -488,7 +488,7 @@ body {
                 <div class="course-dot dot-gen"></div>
                 <div class="course-info">
                     <div class="course-code">ENGL 101</div>
-                    <div class="course-name">English Composition I</div>
+                    <div class="course-name">Freshman Composition I</div>
                 </div>
                 <span class="course-credits">3 cr</span>
             </div>
@@ -505,10 +505,10 @@ body {
             <div class="course-item">
                 <div class="course-dot dot-gen"></div>
                 <div class="course-info">
-                    <div class="course-code">HLTH 100</div>
-                    <div class="course-name">Concepts of Health and Wellness</div>
+                    <div class="course-code">HLTH 105</div>
+                    <div class="course-name">History of the US</div>
                 </div>
-                <span class="course-credits">2 cr</span>
+                <span class="course-credits">3 cr</span>
             </div>
 
         </div>
